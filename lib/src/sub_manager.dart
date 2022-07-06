@@ -120,24 +120,24 @@ class StateSubscription {
 
   void init() {
     _controller = new StreamController<dynamic>.broadcast(
-      onListen: () async {
-        try {
-          await _sub();
-        } catch (e, stack) {
-          _controller.addError(e, stack);
-        }
-      },
-      onCancel: () => _unsub()
-    );
+        onListen: () async {
+          try {
+            await _sub();
+          } catch (e, stack) {
+            _controller.addError(e, stack);
+          }
+        },
+        onCancel: () => _unsub());
   }
 
   deliver(HttpRequest request) async {
-    var content = utf8.decode(await request.fold(<int>[], (List<int> a, List<int> b) {
+    var content =
+        utf8.decode(await request.fold(<int>[], (List<int> a, List<int> b) {
       return a..addAll(b);
     }));
     request.response.close();
 
-    var doc = xml.parse(content);
+    var doc = XmlDocument.parse(content);
     var props = doc.rootElement.children.where((x) => x is XmlElement).toList();
     var map = <String, dynamic>{};
     for (XmlElement prop in props) {
@@ -175,9 +175,7 @@ class StateSubscription {
   Future _sub() async {
     var id = _getId();
 
-    var uri = Uri.parse(
-      eventUrl
-    );
+    var uri = Uri.parse(eventUrl);
 
     var request = await UpnpCommon.httpClient.openUrl("SUBSCRIBE", uri);
 
@@ -207,9 +205,7 @@ class StateSubscription {
   }
 
   Future _refresh() async {
-    var uri = Uri.parse(
-      eventUrl
-    );
+    var uri = Uri.parse(eventUrl);
 
     var id = _getId();
     var url = await _getCallbackUrl(uri, id);
@@ -229,8 +225,8 @@ class StateSubscription {
     request.headers.set("SID", _lastSid);
     request.headers.set("HOST", "${request.uri.host}:${request.uri.port}");
 
-    var response = await request.close()
-      .timeout(const Duration(seconds: 10), onTimeout: () {
+    var response = await request.close().timeout(const Duration(seconds: 10),
+        onTimeout: () {
       return null;
     });
 
@@ -252,17 +248,16 @@ class StateSubscription {
     return "http://${host}:${manager.server.port}/${id}";
   }
 
-  Future _unsub([bool close = false]) async {
-    var request = await UpnpCommon.httpClient.openUrl("UNSUBSCRIBE", Uri.parse(
-      eventUrl
-    ));
+  Future _unsub() async {
+    var request =
+        await UpnpCommon.httpClient.openUrl("UNSUBSCRIBE", Uri.parse(eventUrl));
 
     request.headers.set("User-Agent", "UPNP.dart/1.0");
     request.headers.set("ACCEPT", "*/*");
     request.headers.set("SID", _lastSid);
 
-    var response = await request.close()
-      .timeout(const Duration(seconds: 10), onTimeout: () {
+    var response = await request.close().timeout(const Duration(seconds: 10),
+        onTimeout: () {
       return null;
     });
 

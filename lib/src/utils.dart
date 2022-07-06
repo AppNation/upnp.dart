@@ -2,7 +2,7 @@ library upnp.utils;
 
 import "dart:io";
 
-import "package:xml/xml.dart" hide parse;
+import "package:xml/xml.dart";
 
 class UpnpException {
   final XmlElement element;
@@ -68,10 +68,10 @@ class XmlUtils {
     if (type == "string") {
       return input.toString();
     } else if (type == "number" ||
-      type == "integer" ||
-      type == "int" ||
-      type == "double" ||
-      type == "float") {
+        type == "integer" ||
+        type == "int" ||
+        type == "double" ||
+        type == "float") {
       return num.tryParse(input.toString());
     } else {
       return input.toString();

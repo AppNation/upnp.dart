@@ -19,12 +19,12 @@ class ServiceDescription {
   ServiceDescription.fromXml(Uri uriBase, XmlElement service) {
     type = XmlUtils.getTextSafe(service, "serviceType").trim();
     id = XmlUtils.getTextSafe(service, "serviceId").trim();
-    controlUrl = uriBase.resolve(
-      XmlUtils.getTextSafe(service, "controlURL").trim()
-    ).toString();
-    eventSubUrl = uriBase.resolve(
-      XmlUtils.getTextSafe(service, "eventSubURL").trim()
-    ).toString();
+    controlUrl = uriBase
+        .resolve(XmlUtils.getTextSafe(service, "controlURL").trim())
+        .toString();
+    eventSubUrl = uriBase
+        .resolve(XmlUtils.getTextSafe(service, "eventSubURL").trim())
+        .toString();
 
     var m = XmlUtils.getTextSafe(service, "SCPDURL");
 
@@ -39,8 +39,8 @@ class ServiceDescription {
     }
 
     var request = await UpnpCommon.httpClient
-      .getUrl(Uri.parse(scpdUrl))
-      .timeout(const Duration(seconds: 5), onTimeout: () => null);
+        .getUrl(Uri.parse(scpdUrl))
+        .timeout(const Duration(seconds: 5), onTimeout: () => null);
 
     var response = await request.close();
 
@@ -55,9 +55,10 @@ class ServiceDescription {
     XmlElement doc;
 
     try {
-      var content = await response.cast<List<int>>().transform(utf8.decoder).join();
+      var content =
+          await response.cast<List<int>>().transform(utf8.decoder).join();
       content = content.replaceAll("\u00EF\u00BB\u00BF", "");
-      doc = xml.parse(content).rootElement;
+      doc = XmlDocument.parse(content).rootElement;
     } catch (e) {
       return null;
     }
@@ -85,15 +86,7 @@ class ServiceDescription {
     }
 
     var service = new Service(
-      device,
-      type,
-      id,
-      controlUrl,
-      eventSubUrl,
-      scpdUrl,
-      acts,
-      vars
-    );
+        device, type, id, controlUrl, eventSubUrl, scpdUrl, acts, vars);
 
     for (var act in acts) {
       act.service = service;
@@ -121,15 +114,8 @@ class Service {
   String eventSubUrl;
   String scpdUrl;
 
-  Service(
-    this.device,
-    this.type,
-    this.id,
-    this.controlUrl,
-    this.eventSubUrl,
-    this.scpdUrl,
-    this.actions,
-    this.stateVariables);
+  Service(this.device, this.type, this.id, this.controlUrl, this.eventSubUrl,
+      this.scpdUrl, this.actions, this.stateVariables);
 
   List<String> get actionNames => actions.map((x) => x.name).toList();
 
@@ -147,11 +133,12 @@ class Service {
     request.write(body);
     var response = await request.close();
 
-    var content = await response.cast<List<int>>().transform(utf8.decoder).join();
+    var content =
+        await response.cast<List<int>>().transform(utf8.decoder).join();
 
     if (response.statusCode != 200) {
       try {
-        var doc = xml.parse(content);
+        var doc = XmlDocument.parse(content);
         throw new UpnpException(doc.rootElement);
       } catch (e) {
         if (e is! UpnpException) {
@@ -166,8 +153,7 @@ class Service {
   }
 
   Future<Map<String, String>> invokeAction(
-    String name,
-    Map<String, dynamic> args) async {
+      String name, Map<String, dynamic> args) async {
     return await actions.firstWhere((it) => it.name == name).invoke(args);
   }
 }

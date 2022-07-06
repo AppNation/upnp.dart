@@ -17,26 +17,24 @@ class UpnpHostDevice {
   List<UpnpHostIcon> icons = <UpnpHostIcon>[];
   List<UpnpHostService> services = <UpnpHostService>[];
 
-  UpnpHostDevice({
-    this.deviceType,
-    this.friendlyName,
-    this.manufacturer,
-    this.manufacturerUrl,
-    this.modelName,
-    this.modelNumber,
-    this.modelDescription,
-    this.modelUrl,
-    this.serialNumber,
-    this.presentationUrl,
-    this.udn,
-    this.upc
-  });
+  UpnpHostDevice(
+      {this.deviceType,
+      this.friendlyName,
+      this.manufacturer,
+      this.manufacturerUrl,
+      this.modelName,
+      this.modelNumber,
+      this.modelDescription,
+      this.modelUrl,
+      this.serialNumber,
+      this.presentationUrl,
+      this.udn,
+      this.upc});
 
   UpnpHostService findService(String name) {
     return services.firstWhere(
-      (service) => service.simpleName == name || service.id == name,
-      orElse: () => null
-    );
+        (service) => service.simpleName == name || service.id == name,
+        orElse: () => null);
   }
 
   XML.XmlNode toRootXml({String urlBase}) {
@@ -108,9 +106,9 @@ class UpnpHostDevice {
         x.element("serviceList", nest: () {
           for (var service in services) {
             x.element("service", nest: () {
-              var svcName = service.simpleName == null ?
-                Uri.encodeComponent(service.id) :
-                service.simpleName;
+              var svcName = service.simpleName == null
+                  ? Uri.encodeComponent(service.id)
+                  : service.simpleName;
               x.element("serviceType", nest: service.type);
               x.element("serviceId", nest: service.id);
               x.element("controlURL", nest: "/upnp/control/${svcName}");
@@ -121,7 +119,7 @@ class UpnpHostDevice {
         });
       });
     });
-    return x.build();
+    return x.buildDocument();
   }
 }
 
