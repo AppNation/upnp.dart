@@ -9,9 +9,9 @@ class UpnpDiscoveryServer {
 
   UpnpDiscoveryServer(this.device, this.rootDescriptionUrl);
 
-  RawDatagramSocket _socket;
-  Timer _timer;
-  List<NetworkInterface> _interfaces;
+  RawDatagramSocket? _socket;
+  Timer? _timer;
+  late List<NetworkInterface> _interfaces;
 
   Future start() async {
     await stop();
@@ -25,20 +25,14 @@ class UpnpDiscoveryServer {
     _socket = await RawDatagramSocket.bind("0.0.0.0", 1900);
 
     _interfaces = await NetworkInterface.list();
-    var joinMulticastFunction = _socket.joinMulticast;
+    var joinMulticastFunction = _socket!.joinMulticast;
     for (var interface in _interfaces) {
       withAddress(InternetAddress address) {
         try {
-          Function.apply(joinMulticastFunction, [
-            address
-          ], {
-            #interface: interface
-          });
+          Function.apply(
+              joinMulticastFunction, [address], {#interface: interface});
         } on NoSuchMethodError {
-          Function.apply(joinMulticastFunction, [
-            address,
-            interface
-          ]);
+          Function.apply(joinMulticastFunction, [address, interface]);
         }
       }
 
@@ -47,18 +41,17 @@ class UpnpDiscoveryServer {
       } on SocketException {
         try {
           withAddress(_v6_Multicast);
-        } on OSError {
-        }
+        } on OSError {}
       }
     }
 
-    _socket.broadcastEnabled = true;
-    _socket.multicastHops = 100;
+    _socket!.broadcastEnabled = true;
+    _socket!.multicastHops = 100;
 
-    _socket.listen((RawSocketEvent e) async {
+    _socket!.listen((RawSocketEvent e) async {
       if (e == RawSocketEvent.read) {
-        var packet = _socket.receive();
-        _socket.writeEventsEnabled = true;
+        var packet = _socket!.receive()!;
+        _socket!.writeEventsEnabled = true;
 
         try {
           var string = utf8.decode(packet.data);
@@ -66,7 +59,7 @@ class UpnpDiscoveryServer {
           var firstLine = lines.first;
 
           if (firstLine.trim() == "M-SEARCH * HTTP/1.1") {
-            var map = {};
+            var map = <String, String>{};
             for (String line in lines.skip(1)) {
               if (line.trim().isEmpty) continue;
               if (!line.contains(":")) continue;
@@ -80,22 +73,22 @@ class UpnpDiscoveryServer {
               var search = map["ST"];
               var devices = await respondToSearch(search, packet, map);
               for (var dev in devices) {
-                _socket.send(utf8.encode(dev), packet.address, packet.port);
+                _socket!.send(utf8.encode(dev), packet.address, packet.port);
               }
             }
           }
-        } catch (e) {
-        }
+        } catch (e) {}
       }
     });
 
     await notify();
   }
 
-  Future<List<String>> respondToSearch(String target, Datagram pkt, Map<String, String> headers) async {
+  Future<List<String>> respondToSearch(
+      String? target, Datagram pkt, Map<String, String> headers) async {
     var out = <String>[];
 
-    addDevice(String profile) {
+    addDevice(String? profile) {
       var buff = new StringBuffer();
       buff.write("HTTP/1.1 200 OK\r\n");
       buff.write("CACHE-CONTROL: max-age=180\r\n");
@@ -139,18 +132,18 @@ class UpnpDiscoveryServer {
       buff.write("NTS: ssdp:alive\r\n");
       buff.write("USN: uuid:${UpnpHostUtils.generateToken()}\r\n");
       var bytes = utf8.encode(buff.toString());
-      _socket.send(bytes, _v4_Multicast, 1900);
+      _socket!.send(bytes, _v4_Multicast, 1900);
     }
   }
 
   Future stop() async {
     if (_socket != null) {
-      _socket.close();
+      _socket!.close();
       _socket = null;
     }
 
     if (_timer != null) {
-      _timer.cancel();
+      _timer!.cancel();
       _timer = null;
     }
   }

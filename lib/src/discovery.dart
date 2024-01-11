@@ -8,9 +8,9 @@ class DeviceDiscoverer {
   StreamController<DiscoveredClient> _clientController =
       new StreamController.broadcast();
 
-  List<NetworkInterface> _interfaces;
+  late List<NetworkInterface> _interfaces;
 
-  Future start({bool ipv4: true, bool ipv6: true}) async {
+  Future start({bool ipv4 = true, bool ipv6 = true}) async {
     _interfaces = await NetworkInterface.list();
 
     if (ipv4) {
@@ -22,7 +22,7 @@ class DeviceDiscoverer {
     }
   }
 
-  _createSocket(InternetAddress address) async {
+  Future<void> _createSocket(InternetAddress address) async {
     var socket = await RawDatagramSocket.bind(address, 0);
 
     socket.broadcastEnabled = true;
@@ -101,7 +101,7 @@ class DeviceDiscoverer {
 
   void stop() {
     if (_discoverySearchTimer != null) {
-      _discoverySearchTimer.cancel();
+      _discoverySearchTimer!.cancel();
       _discoverySearchTimer = null;
     }
 
@@ -117,10 +117,8 @@ class DeviceDiscoverer {
 
   Stream<DiscoveredClient> get clients => _clientController.stream;
 
-  void search([String searchTarget]) {
-    if (searchTarget == null) {
-      searchTarget = "upnp:rootdevice";
-    }
+  void search([String? searchTarget]) {
+    searchTarget ??= "upnp:rootdevice";
 
     var buff = new StringBuffer();
 
@@ -148,7 +146,7 @@ class DeviceDiscoverer {
   }
 
   Future<List<DiscoveredClient>> discoverClients(
-      {Duration timeout: const Duration(seconds: 5)}) async {
+      {Duration timeout = const Duration(seconds: 5)}) async {
     var list = <DiscoveredClient>[];
 
     var sub = clients.listen((client) => list.add(client));
@@ -164,18 +162,19 @@ class DeviceDiscoverer {
     return list;
   }
 
-  Timer _discoverySearchTimer;
+  Timer? _discoverySearchTimer;
 
-  Stream<DiscoveredClient> quickDiscoverClients(
-      {Duration timeout: const Duration(seconds: 5),
-      Duration searchInterval: const Duration(seconds: 10),
-      String query,
-      bool unique: true}) async* {
+  Stream<DiscoveredClient> quickDiscoverClients({
+    Duration? timeout = const Duration(seconds: 5),
+    Duration? searchInterval = const Duration(seconds: 10),
+    String? query,
+    bool unique = true,
+  }) async* {
     if (_sockets.isEmpty) {
       await start();
     }
 
-    var seen = new Set<String>();
+    var seen = new Set<String?>();
 
     if (timeout != null) {
       search(query);
@@ -199,8 +198,10 @@ class DeviceDiscoverer {
     }
   }
 
-  Future<List<DiscoveredDevice>> discoverDevices(
-      {String type, Duration timeout: const Duration(seconds: 5)}) {
+  Future<List<DiscoveredDevice>> discoverDevices({
+    String? type,
+    Duration timeout = const Duration(seconds: 5),
+  }) {
     return discoverClients(timeout: timeout).then((clients) {
       if (clients.isEmpty) {
         return [];
@@ -208,18 +209,17 @@ class DeviceDiscoverer {
 
       var uuids = clients
           .where((client) => client.usn != null)
-          .map((client) => client.usn.split("::").first)
+          .map((client) => client.usn!.split("::").first)
           .toSet();
       var devices = <DiscoveredDevice>[];
 
       for (var uuid in uuids) {
         var deviceClients = clients.where((client) {
-          return client != null &&
-              client.usn != null &&
-              client.usn.split("::").first == uuid;
+          return client.usn != null && client.usn!.split("::").first == uuid;
         }).toList();
         var location = deviceClients.first.location;
-        var serviceTypes = deviceClients.map((it) => it.st).toSet().toList();
+        var serviceTypes =
+            deviceClients.map((it) => it.st ?? '').toSet().toList();
         var device = new DiscoveredDevice();
         device.serviceTypes = serviceTypes;
         device.uuid = uuid;
@@ -243,10 +243,11 @@ class DeviceDiscoverer {
     });
   }
 
-  Future<List<Device>> getDevices(
-      {String type,
-      Duration timeout: const Duration(seconds: 5),
-      bool silent: true}) async {
+  Future<List<Device>> getDevices({
+    String? type,
+    Duration timeout = const Duration(seconds: 5),
+    bool silent = true,
+  }) async {
     var results = await discoverDevices(type: type, timeout: timeout);
 
     var list = <Device>[];
@@ -271,24 +272,20 @@ class DeviceDiscoverer {
 }
 
 class DiscoveredDevice {
-  List<String> serviceTypes = [];
-  String uuid;
-  String location;
+  List<String?> serviceTypes = [];
+  String? uuid;
+  String? location;
 
-  Future<Device> getRealDevice() async {
-    HttpClientResponse response;
+  Future<Device?> getRealDevice() async {
+    late HttpClientResponse response;
 
     try {
       var request = await UpnpCommon.httpClient
-          .getUrl(Uri.parse(location))
-          .timeout(const Duration(seconds: 5), onTimeout: () => null);
+          .getUrl(Uri.parse(location!))
+          .timeout(const Duration(seconds: 5));
 
       response = await request.close();
     } catch (_) {
-      return null;
-    }
-
-    if (response == null) {
       return null;
     }
 
@@ -312,16 +309,16 @@ class DiscoveredDevice {
       throw new ArgumentError("Not SCPD Compatible");
     }
 
-    return new Device()..loadFromXml(location, doc.rootElement);
+    return new Device()..loadFromXml(location!, doc.rootElement);
   }
 }
 
 class DiscoveredClient {
-  String st;
-  String usn;
-  String server;
-  String location;
-  Map<String, String> headers;
+  String? st;
+  String? usn;
+  String? server;
+  String? location;
+  Map<String, String>? headers;
 
   DiscoveredClient();
 
@@ -338,11 +335,11 @@ class DiscoveredClient {
     return buff.toString();
   }
 
-  Future<Device> getDevice() async {
+  Future<Device?> getDevice() async {
     Uri uri;
 
     try {
-      uri = Uri.parse(location);
+      uri = Uri.parse(location!);
     } catch (e) {
       return null;
     }
@@ -369,6 +366,6 @@ class DiscoveredClient {
           " description. ${e}");
     }
 
-    return new Device()..loadFromXml(location, doc.rootElement);
+    return new Device()..loadFromXml(location!, doc.rootElement);
   }
 }

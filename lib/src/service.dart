@@ -10,20 +10,20 @@ const String _SOAP_BODY = """
 """;
 
 class ServiceDescription {
-  String type;
-  String id;
-  String controlUrl;
-  String eventSubUrl;
-  String scpdUrl;
+  String? type;
+  String? id;
+  String? controlUrl;
+  String? eventSubUrl;
+  String? scpdUrl;
 
   ServiceDescription.fromXml(Uri uriBase, XmlElement service) {
-    type = XmlUtils.getTextSafe(service, "serviceType").trim();
-    id = XmlUtils.getTextSafe(service, "serviceId").trim();
+    type = XmlUtils.getTextSafe(service, "serviceType")!.trim();
+    id = XmlUtils.getTextSafe(service, "serviceId")!.trim();
     controlUrl = uriBase
-        .resolve(XmlUtils.getTextSafe(service, "controlURL").trim())
+        .resolve(XmlUtils.getTextSafe(service, "controlURL")!.trim())
         .toString();
     eventSubUrl = uriBase
-        .resolve(XmlUtils.getTextSafe(service, "eventSubURL").trim())
+        .resolve(XmlUtils.getTextSafe(service, "eventSubURL")!.trim())
         .toString();
 
     var m = XmlUtils.getTextSafe(service, "SCPDURL");
@@ -33,16 +33,21 @@ class ServiceDescription {
     }
   }
 
-  Future<Service> getService([Device device]) async {
+  Future<Service?> getService([Device? device]) async {
     if (scpdUrl == null) {
       throw new Exception("Unable to fetch service, no SCPD URL.");
     }
 
-    var request = await UpnpCommon.httpClient
-        .getUrl(Uri.parse(scpdUrl))
-        .timeout(const Duration(seconds: 5), onTimeout: () => null);
+    HttpClientResponse? response;
+    try {
+      HttpClientRequest? request = await UpnpCommon.httpClient
+          .getUrl(Uri.parse(scpdUrl!))
+          .timeout(const Duration(seconds: 5));
 
-    var response = await request.close();
+      response = await request.close();
+    } catch (e) {
+      //
+    }
 
     if (response == null) {
       return null;
@@ -104,20 +109,20 @@ class ServiceDescription {
 }
 
 class Service {
-  final Device device;
-  final String type;
-  final String id;
+  final Device? device;
+  final String? type;
+  final String? id;
   final List<Action> actions;
   final List<StateVariable> stateVariables;
 
-  String controlUrl;
-  String eventSubUrl;
-  String scpdUrl;
+  String? controlUrl;
+  String? eventSubUrl;
+  String? scpdUrl;
 
   Service(this.device, this.type, this.id, this.controlUrl, this.eventSubUrl,
       this.scpdUrl, this.actions, this.stateVariables);
 
-  List<String> get actionNames => actions.map((x) => x.name).toList();
+  List<String?> get actionNames => actions.map((x) => x.name).toList();
 
   Future<String> sendToControlUrl(String name, String param) async {
     var body = _SOAP_BODY.replaceAll("{param}", param);
@@ -126,7 +131,7 @@ class Service {
       print("Send to ${controlUrl} (SOAPACTION: ${type}#${name}): ${body}");
     }
 
-    var request = await UpnpCommon.httpClient.postUrl(Uri.parse(controlUrl));
+    var request = await UpnpCommon.httpClient.postUrl(Uri.parse(controlUrl!));
     request.headers.set("SOAPACTION", '"${type}#${name}"');
     request.headers.set("Content-Type", 'text/xml; charset="utf-8"');
     request.headers.set("User-Agent", 'CyberGarage-HTTP/1.0');

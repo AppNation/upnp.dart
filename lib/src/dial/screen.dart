@@ -1,16 +1,12 @@
 part of upnp.dial;
 
 class DialScreen {
-  static Stream<DialScreen> find({
-    bool silent: true
-  }) async* {
+  static Stream<DialScreen> find({bool silent = true}) async* {
     var discovery = new DeviceDiscoverer();
-    var ids = new Set<String>();
+    var ids = new Set<String?>();
 
     await for (DiscoveredClient client in discovery.quickDiscoverClients(
-      timeout: const Duration(seconds: 5),
-      query: CommonDevices.DIAL
-    )) {
+        timeout: const Duration(seconds: 5), query: CommonDevices.DIAL)) {
       if (ids.contains(client.usn)) {
         continue;
       }
@@ -19,8 +15,8 @@ class DialScreen {
       try {
         var dev = await client.getDevice();
         yield new DialScreen(
-          Uri.parse(Uri.parse(client.location).origin),
-          dev.friendlyName
+          Uri.parse(Uri.parse(client.location!).origin),
+          dev!.friendlyName,
         );
       } catch (e) {
         if (!silent) {
@@ -31,7 +27,7 @@ class DialScreen {
   }
 
   final Uri baseUri;
-  final String name;
+  final String? name;
 
   DialScreen(this.baseUri, this.name);
 
@@ -40,7 +36,7 @@ class DialScreen {
   }
 
   Future<bool> isIdle() async {
-    HttpClientResponse response;
+    HttpClientResponse? response;
 
     try {
       response = await send("GET", "/apps");
@@ -63,12 +59,13 @@ class DialScreen {
           out += "&";
         }
 
-        out += "${Uri.encodeComponent(key)}=${Uri.encodeComponent(payload[key].toString())}";
+        out +=
+            "${Uri.encodeComponent(key)}=${Uri.encodeComponent(payload[key].toString())}";
       }
       payload = out;
     }
 
-    HttpClientResponse response;
+    HttpClientResponse? response;
     try {
       response = await send("POST", "/apps/${app}", body: payload);
       if (response.statusCode == 201) {
@@ -83,7 +80,7 @@ class DialScreen {
   }
 
   Future<bool> hasApp(String app) async {
-    HttpClientResponse response;
+    HttpClientResponse? response;
     try {
       response = await send("GET", "/apps/${app}");
       if (response.statusCode == 404) {
@@ -97,12 +94,12 @@ class DialScreen {
     }
   }
 
-  Future<String> getCurrentApp() async {
-    HttpClientResponse response;
+  Future<String?> getCurrentApp() async {
+    HttpClientResponse? response;
     try {
       response = await send("GET", "/apps");
       if (response.statusCode == 302) {
-        var loc = response.headers.value("location");
+        var loc = response.headers.value("location")!;
         var uri = Uri.parse(loc);
         return uri.pathSegments[1];
       }
@@ -114,10 +111,10 @@ class DialScreen {
     }
   }
 
-  Future<bool> close([String app]) async {
+  Future<bool> close([String? app]) async {
     var toClose = app == null ? await getCurrentApp() : app;
     if (toClose != null) {
-      HttpClientResponse response;
+      HttpClientResponse? response;
       try {
         response = await send("DELETE", "/apps/${toClose}");
         if (response.statusCode != 200) {
@@ -133,15 +130,10 @@ class DialScreen {
     return false;
   }
 
-  Future<HttpClientResponse> send(
-    String method,
-    String path, {
-      body,
-      Map<String, dynamic> headers
-  }) async {
-    var request = await UpnpCommon.httpClient.openUrl(
-      method, baseUri.resolve(path)
-    );
+  Future<HttpClientResponse> send(String method, String path,
+      {body, Map<String, dynamic>? headers}) async {
+    var request =
+        await UpnpCommon.httpClient.openUrl(method, baseUri.resolve(path));
 
     if (body is String) {
       request.write(body);

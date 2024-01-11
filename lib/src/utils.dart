@@ -18,19 +18,19 @@ class XmlUtils {
     return node.findElements(name).first;
   }
 
-  static String getTextSafe(XmlElement node, String name) {
-    var elements = node.findElements(name);
-    if (elements.isEmpty) {
+  static String? getTextSafe(XmlElement? node, String name) {
+    var elements = node?.findElements(name);
+    if (elements?.isEmpty ?? true) {
       return null;
     }
-    return elements.first.text;
+    return elements!.first.text;
   }
 
   static String unescape(String input) {
     return input.replaceAll("&gt;", ">").replaceAll("&lt;", "<");
   }
 
-  static dynamic asRichValue(String value) {
+  static dynamic asRichValue(String? value) {
     if (value == null) {
       return null;
     }

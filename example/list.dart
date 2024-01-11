@@ -5,24 +5,15 @@ import "package:upnp/src/utils.dart";
 
 Future printDevice(Device device) async {
   void prelude() {
-    print("- ${device.modelName} by ${device.manufacturer} (uuid: ${device.uuid})");
-    print("- URL: ${device.url}");
+    print(
+        '- ${device.modelName} by ${device.manufacturer} (uuid: ${device.uuid})');
+    print('- URL: ${device.url}');
   }
 
-  if (device.services == null) {
-    prelude();
-    print("-----");
-    return;
-  }
-
-  var svcs = <Service>[];
+  final svcs = <Service?>[];
 
   for (var svc in device.services) {
-    if (svc == null) {
-      continue;
-    }
-
-    var service = await svc.getService();
+    final service = await svc.getService();
     svcs.add(service);
   }
 
@@ -30,60 +21,56 @@ Future printDevice(Device device) async {
 
   for (var service in svcs) {
     if (service != null) {
-      print("  - Type: ${service.type}");
-      print("  - ID: ${service.id}");
-      print("  - Control URL: ${service.controlUrl}");
+      print('  - Type: ${service.type}');
+      print('  - ID: ${service.id}');
+      print('  - Control URL: ${service.controlUrl}');
 
       if (service.actions.isNotEmpty) {
-        print("  - Actions:");
+        print('  - Actions:');
       }
 
       for (var action in service.actions) {
-        print("    - Name: ${action.name}");
-        print("    - Arguments: ${action.arguments
-          .where((it) => it.direction == "in")
-          .map((it) => it.name)
-          .toList()}");
-        print("    - Results: ${action.arguments
-          .where((it) => it.direction == "out")
-          .map((it) => it.name)
-          .toList()}");
+        print('    - Name: ${action.name}');
+        print(
+            "    - Arguments: ${action.arguments.where((it) => it.direction == "in").map((it) => it.name).toList()}");
+        print(
+            "    - Results: ${action.arguments.where((it) => it.direction == "out").map((it) => it.name).toList()}");
 
-        print("");
+        print('');
       }
 
       if (service.stateVariables.isNotEmpty) {
-        print("  - State Variables:");
+        print('  - State Variables:');
       } else {
-        print("");
+        print('');
       }
 
       for (var variable in service.stateVariables) {
-        print("    - Name: ${variable.name}");
-        print("    - Data Type: ${variable.dataType}");
+        print('    - Name: ${variable.name}');
+        print('    - Data Type: ${variable.dataType}');
         if (variable.defaultValue != null) {
-          print("    - Default Value: ${variable.defaultValue}");
+          print('    - Default Value: ${variable.defaultValue}');
         }
 
-        print("");
+        print('');
       }
 
       if (service.actions.isEmpty) {
-        print("");
+        print('');
       }
     }
   }
 
-  print("-----");
+  print('-----');
 }
 
 main(List<String> args) async {
-  var discoverer = new DeviceDiscoverer();
+  final discoverer = DeviceDiscoverer();
   await discoverer.start(ipv6: false);
   await discoverer
-    .quickDiscoverClients()
-    .listen((DiscoveredClient client) async {
-    Device device;
+      .quickDiscoverClients()
+      .listen((DiscoveredClient client) async {
+    Device? device;
 
     try {
       device = await client.getDevice();
@@ -98,10 +85,8 @@ main(List<String> args) async {
       return;
     }
 
-    if (device != null) {
-      await printDevice(device);
-    }
+    await printDevice(device);
   }).asFuture();
 
-  await UpnpCommon.httpClient.close();
+  UpnpCommon.httpClient.close();
 }

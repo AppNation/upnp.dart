@@ -72,30 +72,28 @@ class UpnpServer {
     }
 
     if (service == null) {
-      request.response
-        ..statusCode = HttpStatus.notFound
-        ..close();
+      request.response.statusCode = HttpStatus.notFound;
+      await request.response.close();
       return;
     }
 
-    for (XML.XmlNode node in body.children) {
+    for (XML.XmlNode node in body!.children) {
       if (node is XML.XmlElement) {
         var name = node.name.local;
-        var act = service.actions
-            .firstWhere((x) => x.name == name, orElse: () => null);
-        if (act == null) {
-          request.response
-            ..statusCode = HttpStatus.badRequest
-            ..close();
+        UpnpHostAction act;
+        try {
+          act = service.actions.firstWhere((x) => x.name == name);
+        } catch (e) {
+          request.response.statusCode = HttpStatus.badRequest;
+          await request.response.close();
           return;
         }
 
         if (act.handler != null) {
           // TODO(kaendfinger): make this have inputs and outputs.
-          await act.handler({});
-          request.response
-            ..statusCode = HttpStatus.ok
-            ..close();
+          await act.handler!({});
+          request.response.statusCode = HttpStatus.ok;
+          await request.response.close();
           return;
         }
       }

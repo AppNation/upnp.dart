@@ -14,10 +14,11 @@ main() async {
 
   for (Device device in devices) {
     for (ServiceDescription desc in device.services) {
-      Service service;
+      Service? service;
 
       try {
-        service = await desc.getService(device).timeout(const Duration(seconds: 5));
+        service =
+            await desc.getService(device).timeout(const Duration(seconds: 5));
       } catch (e) {
         print(e);
       }
@@ -25,9 +26,10 @@ main() async {
       if (service != null) {
         try {
           sub.subscribeToService(service).listen((value) {
-            print("${device.friendlyName} - ${service.id}: ${value}");
+            print("${device.friendlyName} - ${service!.id}: ${value}");
           }, onError: (e, stack) {
-            print("Error while subscribing to ${service.type} for ${device.friendlyName}: ${e}");
+            print(
+                "Error while subscribing to ${service!.type} for ${device.friendlyName}: ${e}");
           });
         } catch (e) {
           print(e);
